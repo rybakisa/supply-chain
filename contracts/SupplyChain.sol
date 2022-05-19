@@ -17,6 +17,11 @@ contract SupplyChain {
     
     event ItemStateChanged(uint _itemitemId, uint _state);
 
+    modifier itemHasState(uint _itemId, SupplyChain.ItemState _state) {
+        require(items[_itemId]._state == _state, "Item is further in the supply chain");
+        _;
+    }
+
     function createItem(string memory _identifier, uint _priceInWei) public {
         items[itemId]._priceInWei = _priceInWei;
         items[itemId]._state = ItemState.Created;
@@ -27,18 +32,15 @@ contract SupplyChain {
         itemId++;
     }
 
-    function receivePayment(uint _itemId) public payable {
+    function receivePayment(uint _itemId) public payable itemHasState(_itemId, ItemState.Created) {
         require(items[itemId]._priceInWei <= msg.value, "Not fully paid");
-        require(items[itemId]._state == ItemState.Created, "Item is further in the supply chain");
         
         items[_itemId]._state = ItemState.Paid;
         
         emit ItemStateChanged(_itemId, uint(items[_itemId]._state));
     }
 
-    function deliverItem(uint _itemId) public {
-        require(items[_itemId]._state == ItemState.Paid, "Item is further in the supply chain");
-        
+    function deliverItem(uint _itemId) public itemHasState(_itemId, ItemState.Paid) {
         items[_itemId]._state = ItemState.Delivered;
         
         emit ItemStateChanged(_itemId, uint(items[_itemId]._state));
